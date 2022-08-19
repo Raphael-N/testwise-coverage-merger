@@ -17,3 +17,5 @@ java -jar testwise-coverage-converter-0.1.jar /path/to/testwise/coverage
 
 For big coverage files this can be quite memory hungry since it keeps all coverage
 files in memory for some time so be sure to give java enough memory for your testwise coverage files.
+
+The resulting coverage will be written into the file out.json in your current working directory.
