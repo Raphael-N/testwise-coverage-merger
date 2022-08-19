@@ -1,15 +1,18 @@
 package com.cqse;
 
 import com.cqse.json.FileCoverageDeserializer;
+import com.cqse.json.FileCoverageSerializer;
 import com.cqse.model.ETestExecutionResult;
 import com.cqse.model.FileCoverage;
 import com.cqse.model.LineRange;
 import com.cqse.model.PathCoverage;
 import com.cqse.model.Test;
 import com.cqse.model.TestwiseCoverage;
+import com.cqse.utils.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
@@ -22,16 +25,25 @@ import java.util.List;
 import java.util.Map;
 
 public class Merger {
+    private static final Gson gson = new GsonBuilder().registerTypeAdapter(FileCoverage.class, new FileCoverageDeserializer())
+            .registerTypeAdapter(FileCoverage.class, new FileCoverageSerializer()).create();
 
-    public static void main(String[] args) {
-        TestwiseCoverage testwiseCoverage = loadCoverage("/Users/raphael/CQSE/TSProjects/squishcoco-testwise-converter/testwisecoverage/testwise_2.json");
-        TestwiseCoverage testwiseCoverage2 = loadCoverage("/Users/raphael/CQSE/TSProjects/squishcoco-testwise-converter/testwisecoverage/testwise_1.json");
-        TestwiseCoverage resultCov = merge(List.of(testwiseCoverage, testwiseCoverage2));
-        System.out.println("Test");
+
+    public static void main(String[] args) throws IOException {
+        List<String> coveragePaths = FileUtils.getJsonFilesForPaths(args);
+        List<TestwiseCoverage> coverages = new ArrayList<>();
+        for (String coveragePath : coveragePaths) {
+            System.out.println("Loading Coverage from " + coveragePath);
+            coverages.add(loadCoverage(coveragePath));
+        }
+        TestwiseCoverage resultCov = merge(coverages);
+        FileWriter outputWriter = new FileWriter("out.json");
+        gson.toJson(resultCov, outputWriter);
+        outputWriter.flush();
+        outputWriter.close();
     }
 
     private static TestwiseCoverage loadCoverage(String coveragePath) {
-        Gson gson = new GsonBuilder().registerTypeAdapter(FileCoverage.class, new FileCoverageDeserializer()).create();
         try (Reader reader = Files.newBufferedReader(Paths.get(coveragePath))) {
             return gson.fromJson(reader, TestwiseCoverage.class);
         } catch (IOException ex) {
@@ -44,6 +56,7 @@ public class Merger {
         Map<String, Test> finalTestMap = new HashMap<>();
         for (TestwiseCoverage coverage : coverageList) {
             for (Test test : coverage.tests()) {
+                System.out.println("Merging Test " + test.uniformPath());
                 if (finalTestMap.containsKey(test.uniformPath())) {
                     finalTestMap.put(test.uniformPath(), mergeTestCoverage(finalTestMap.get(test.uniformPath()), test));
                 } else {

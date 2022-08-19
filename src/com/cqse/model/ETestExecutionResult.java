@@ -19,6 +19,12 @@ public enum ETestExecutionResult {
     ERROR;
 
     public static ETestExecutionResult combine(ETestExecutionResult result1, ETestExecutionResult result2) {
+        if (result1 == null) {
+            return result2;
+        }
+        if (result2 == null) {
+            return result1;
+        }
         return ETestExecutionResult.values()[Math.max(result1.ordinal(), result2.ordinal())];
     }
 
